@@ -3,9 +3,18 @@
 <head>
   <title>Passenger Alert</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- EmailJS -->
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <script>
+    (function(){
+      emailjs.init("YOUR_PUBLIC_KEY");
+    })();
+  </script>
+
   <style>
     body { font-family: Arial; background:#f2f2f2; padding:20px; }
-    h2 { color:red; text-align:center; }
+    h2 { text-align:center; color:red; }
     input, textarea, button {
       width:100%; padding:12px; margin-top:10px; font-size:16px;
     }
@@ -14,6 +23,7 @@
     }
   </style>
 </head>
+
 <body>
 
 <h2>🚨 Passenger Emergency Alert</h2>
@@ -30,22 +40,31 @@ function sendAlert() {
   document.getElementById("status").innerText = "Getting live location...";
 
   navigator.geolocation.getCurrentPosition(
-    function(pos) {
-      const alertData = {
-        bus: document.getElementById("bus").value,
+    function(position) {
+
+      let locationLink =
+        "https://www.google.com/maps?q=" +
+        position.coords.latitude + "," +
+        position.coords.longitude;
+
+      let params = {
+        bus_number: document.getElementById("bus").value,
         issue: document.getElementById("issue").value,
-        lat: pos.coords.latitude,
-        lon: pos.coords.longitude,
+        location: locationLink,
         time: new Date().toLocaleString()
       };
 
-      localStorage.setItem("busAlert", JSON.stringify(alertData));
-
-      document.getElementById("status").innerText =
-        "✅ Alert sent to Admin successfully!";
+      emailjs.send("YOUR_SERVICE_ID", "YOUR_TEMPLATE_ID", params)
+        .then(function() {
+          document.getElementById("status").innerText =
+            "✅ Alert sent to Admin successfully!";
+        }, function() {
+          document.getElementById("status").innerText =
+            "❌ Failed to send alert";
+        });
     },
     function() {
-      alert("Location permission required!");
+      alert("Location permission is required!");
     }
   );
 }

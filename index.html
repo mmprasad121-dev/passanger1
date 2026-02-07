@@ -1,73 +1,143 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Passenger Alert</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <!-- EmailJS -->
-  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
-  <script>
-    (function(){
-      emailjs.init("YOUR_PUBLIC_KEY");
-    })();
-  </script>
-
+  <meta charset="UTF-8">
+  <title>Level Devil Infinite</title>
   <style>
-    body { font-family: Arial; background:#f2f2f2; padding:20px; }
-    h2 { text-align:center; color:red; }
-    input, textarea, button {
-      width:100%; padding:12px; margin-top:10px; font-size:16px;
+    body {
+      margin: 0;
+      background: #000;
+      color: white;
+      text-align: center;
+      font-family: Arial;
+    }
+    canvas {
+      background: #111;
+      display: block;
+      margin: auto;
+      border: 2px solid red;
     }
     button {
-      background:red; color:white; border:none; font-weight:bold;
+      margin-top: 10px;
+      padding: 10px 20px;
+      font-size: 18px;
     }
   </style>
 </head>
-
 <body>
 
-<h2>🚨 Passenger Emergency Alert</h2>
+<h2>😈 LEVEL DEVIL – INFINITE 😈</h2>
+<p>Level: <span id="level">1</span></p>
 
-<input id="bus" placeholder="Bus Number">
-<textarea id="issue" placeholder="Describe the problem"></textarea>
-
-<button onclick="sendAlert()">SEND ALERT</button>
-
-<p id="status"></p>
+<canvas id="game" width="600" height="300"></canvas>
+<button onclick="jump()">JUMP</button>
 
 <script>
-function sendAlert() {
-  document.getElementById("status").innerText = "Getting live location...";
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
 
-  navigator.geolocation.getCurrentPosition(
-    function(position) {
+let level = 1;
 
-      let locationLink =
-        "https://www.google.com/maps?q=" +
-        position.coords.latitude + "," +
-        position.coords.longitude;
+let player = { x: 30, y: 240, w: 20, h: 20, dy: 0 };
+let gravity = 0.6;
+let jumping = false;
 
-      let params = {
-        bus_number: document.getElementById("bus").value,
-        issue: document.getElementById("issue").value,
-        location: locationLink,
-        time: new Date().toLocaleString()
-      };
+let traps = [];
 
-      emailjs.send("YOUR_SERVICE_ID", "YOUR_TEMPLATE_ID", params)
-        .then(function() {
-          document.getElementById("status").innerText =
-            "✅ Alert sent to Admin successfully!";
-        }, function() {
-          document.getElementById("status").innerText =
-            "❌ Failed to send alert";
-        });
-    },
-    function() {
-      alert("Location permission is required!");
-    }
-  );
+function generateLevel() {
+  traps = [];
+  let count = 3 + level;
+
+  for (let i = 0; i < count; i++) {
+    traps.push({
+      x: 150 + Math.random() * 400,
+      y: 260,
+      w: 25,
+      h: 25,
+      active: Math.random() > 0.4
+    });
+  }
 }
+
+function resetPlayer() {
+  player.x = 30;
+  player.y = 240;
+  player.dy = 0;
+  jumping = false;
+}
+
+function die() {
+  resetPlayer();
+}
+
+function nextLevel() {
+  level++;
+  document.getElementById("level").innerText = level;
+  resetPlayer();
+  generateLevel();
+}
+
+function jump() {
+  if (!jumping) {
+    player.dy = -10;
+    jumping = true;
+  }
+}
+
+// keyboard support
+document.addEventListener("keydown", e => {
+  if (e.key === " ") jump();
+});
+
+generateLevel();
+
+function update() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // gravity
+  player.dy += gravity;
+  player.y += player.dy;
+
+  // ground
+  if (player.y + player.h >= 260) {
+    player.y = 260 - player.h;
+    player.dy = 0;
+    jumping = false;
+  }
+
+  // move forward
+  player.x += 1.5 + level * 0.2;
+
+  // draw player
+  ctx.fillStyle = "lime";
+  ctx.fillRect(player.x, player.y, player.w, player.h);
+
+  // traps
+  ctx.fillStyle = "red";
+  traps.forEach(t => {
+    if (t.active) ctx.fillRect(t.x, t.y, t.w, t.h);
+
+    if (
+      t.active &&
+      player.x < t.x + t.w &&
+      player.x + player.w > t.x &&
+      player.y < t.y + t.h &&
+      player.y + player.h > t.y
+    ) {
+      die();
+    }
+  });
+
+  // finish
+  ctx.fillStyle = "yellow";
+  ctx.fillRect(580, 220, 10, 40);
+
+  if (player.x > 580) nextLevel();
+
+  requestAnimationFrame(update);
+}
+
+update();
 </script>
 
 </body>
